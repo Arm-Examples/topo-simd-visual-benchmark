@@ -1,24 +1,88 @@
 services:
-  cortexa_app:
-    extends:
-      file: cortexa_app/compose.yaml
-      service: cortexa_app
-  cortexm_app:
-    extends:
-      file: cortexm_app/compose.yaml
-      service: cortexm_app
+  processor-scalar:
+    platform: linux/arm64/v8
     build:
+      context: ./processor-runtime
+      target: app-scalar
+    ports:
+      - "8090:8000"
+    environment:
+      BUILD_VARIANT: "scalar"
+      BUILD_MARCH: "armv8-a+nosimd"
+      BUILD_OPTIMIZATION: "scalar-only"
+      SERVICE_PORT: "8000"
+
+  processor-neon:
+    platform: linux/arm64/v8
+    build:
+      context: ./processor-runtime
+      target: app-neon
       args:
-        PLATFORM: arm_edge_board
-        REMOTEPROC: m33
+        ENABLE_SVE: yes
+    ports:
+      - "8091:8000"
+    environment:
+      BUILD_VARIANT: "neon"
+      BUILD_MARCH: "armv8-a"
+      BUILD_OPTIMIZATION: "neon-vectorized"
+      SERVICE_PORT: "8000"
+
+  processor-sve:
+    platform: linux/arm64/v8
+    build:
+      context: ./processor-runtime
+      target: app-sve
+    ports:
+      - "8092:8000"
+    environment:
+      BUILD_VARIANT: "sve"
+      BUILD_MARCH: "armv9-a+sve"
+      BUILD_OPTIMIZATION: "sve-vectorized"
+      SERVICE_PORT: "8000"
+
+  dashboard:
+    platform: linux/arm64/v8
+    build:
+      context: ./dashboard-ui
+      args:
+        PROCESSOR_CLIENT_TIMEOUT_S: 30
+        ENABLE_SVE: yes
+    depends_on:
+      - processor-scalar
+      - processor-neon
+      - processor-sve
+    ports:
+      - "8095:8080"
 
 x-topo:
-  name: "topo-project"
-  description: "topo project"
+  name: "simd-visual-benchmark"
+  description: |
+    Visual demonstration of SIMD performance benefits on Arm processors.
+    Compare scalar (no SIMD), NEON (128-bit), and SVE (scalable vector)
+    implementations running identical image processing workloads side-by-side.
+
+    This demo shows real hardware acceleration through three C++ services
+    compiled with different architecture flags, processing the same box blur
+    algorithm on images. Performance differences are measured in real-time
+    and displayed in an interactive web dashboard.
+
+    Perfect for demonstrating to non-technical audiences the concrete benefits
+    of SIMD optimizations, with visual results and quantified speedups.
+
+  features:
+    - "NEON"
+    - "SVE"
+
   args:
-    PLATFORM:
-      description: Target device to build for
-      default: arm_edge_board
-    REMOTEPROC:
-      description: remoteprocessor name to Target
-      default: m33
+    ENABLE_SVE:
+      description: |
+        Set to "no" to disable the SVE column in the dashboard. The processor-sve
+        container will not start, and the NEON service will fall back to the scalar
+        code path.
+      default: "yes"
+
+    PROCESSOR_CLIENT_TIMEOUT_S:
+      description: |
+        HTTP timeout in seconds that the dashboard uses when contacting the
+        processor services. Increase when running very large workloads.
+      default: "30"
