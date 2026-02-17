@@ -1,7 +1,7 @@
 # Multi-stage Dockerfile for building scalar, NEON, and SVE variants
 
 # Base builder stage with common dependencies
-FROM --platform=linux/arm64/v8 ubuntu:24.04 AS builder-base
+FROM ubuntu:24.04 AS builder-base
 
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -81,7 +81,7 @@ RUN ${CXX} -o processor server.cpp image_processor.cpp \
     && ${STRIP} processor
 
 # Final scalar runtime
-FROM --platform=linux/arm64/v8 ubuntu:24.04 AS app-scalar
+FROM ubuntu:24.04 AS app-scalar
 
 ENV BUILD_VARIANT=scalar \
     BUILD_MARCH=armv8-a+nosimd \
@@ -97,7 +97,7 @@ EXPOSE 8000
 CMD ["./processor"]
 
 # Final NEON runtime
-FROM --platform=linux/arm64/v8 ubuntu:24.04 AS app-neon
+FROM ubuntu:24.04 AS app-neon
 
 ENV BUILD_VARIANT=neon \
     BUILD_MARCH=armv8-a \
@@ -113,7 +113,7 @@ EXPOSE 8000
 CMD ["./processor"]
 
 # Final SVE runtime
-FROM --platform=linux/arm64/v8 ubuntu:24.04 AS app-sve
+FROM ubuntu:24.04 AS app-sve
 
 ARG ENABLE_SVE
 ENV BUILD_VARIANT=sve \

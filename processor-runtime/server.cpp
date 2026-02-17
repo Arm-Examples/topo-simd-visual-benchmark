@@ -108,7 +108,7 @@ int main() {
     }
 
     if (variant == "sve" && !sve_enabled) {
-        std::cout << "ENABLE_NEON disabled for NEON variant; exiting service." << std::endl;
+        std::cout << "ENABLE_SVE disabled for SVE variant; exiting service." << std::endl;
         return 0;
     }
 

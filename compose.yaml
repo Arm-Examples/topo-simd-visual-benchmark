@@ -1,6 +1,6 @@
 services:
   processor-scalar:
-    platform: linux/arm64/v8
+    platform: linux/arm64
     build:
       context: ./processor-runtime
       target: app-scalar
@@ -13,12 +13,10 @@ services:
       SERVICE_PORT: "8000"
 
   processor-neon:
-    platform: linux/arm64/v8
+    platform: linux/arm64
     build:
       context: ./processor-runtime
       target: app-neon
-      args:
-        ENABLE_SVE: yes
     ports:
       - "8091:8000"
     environment:
@@ -28,12 +26,14 @@ services:
       SERVICE_PORT: "8000"
 
   processor-sve:
-    platform: linux/arm64/v8
+    platform: linux/arm64
     build:
       context: ./processor-runtime
       target: app-sve
+      args:
+        ENABLE_SVE: yes
     ports:
-      - "8092:8000"
+      - "8092:8000"    
     environment:
       BUILD_VARIANT: "sve"
       BUILD_MARCH: "armv9-a+sve"
@@ -41,7 +41,7 @@ services:
       SERVICE_PORT: "8000"
 
   dashboard:
-    platform: linux/arm64/v8
+    platform: linux/arm64
     build:
       context: ./dashboard-ui
       args:
@@ -77,8 +77,7 @@ x-topo:
     ENABLE_SVE:
       description: |
         Set to "no" to disable the SVE column in the dashboard. The processor-sve
-        container will not start, and the NEON service will fall back to the scalar
-        code path.
+        container will not start.
       default: "yes"
 
     PROCESSOR_CLIENT_TIMEOUT_S:
