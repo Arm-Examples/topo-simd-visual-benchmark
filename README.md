@@ -14,7 +14,7 @@ This demo shows real hardware acceleration through three C++ services compiled w
 C++ image processing service built in three variants:
 - **Scalar**: No SIMD optimizations (`-march=armv8-a+nosimd`)
 - **NEON**: 128-bit SIMD vectors (`-march=armv8-a`)
-- **SVE**: Scalable Vector Extension (`-march=armv9-a+sve`)
+- **SVE**: Scalable Vector Extension (`-march=armv8.2-a+sve`)
 
 ### dashboard-ui/
 Python FastAPI web application providing interactive controls and side-by-side benchmark results.

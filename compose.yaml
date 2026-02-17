@@ -4,26 +4,20 @@ services:
     build:
       context: ./processor-runtime
       target: app-scalar
+      args:
+        BUILD_MARCH: "armv8-a+nosimd"
     ports:
       - "8090:8000"
-    environment:
-      BUILD_VARIANT: "scalar"
-      BUILD_MARCH: "armv8-a+nosimd"
-      BUILD_OPTIMIZATION: "scalar-only"
-      SERVICE_PORT: "8000"
 
   processor-neon:
     platform: linux/arm64
     build:
       context: ./processor-runtime
       target: app-neon
+      args:
+        BUILD_MARCH: "armv8-a"
     ports:
       - "8091:8000"
-    environment:
-      BUILD_VARIANT: "neon"
-      BUILD_MARCH: "armv8-a"
-      BUILD_OPTIMIZATION: "neon-vectorized"
-      SERVICE_PORT: "8000"
 
   processor-sve:
     platform: linux/arm64
@@ -32,13 +26,9 @@ services:
       target: app-sve
       args:
         ENABLE_SVE: yes
+        BUILD_MARCH: "armv8.2-a+sve"
     ports:
-      - "8092:8000"    
-    environment:
-      BUILD_VARIANT: "sve"
-      BUILD_MARCH: "armv9-a+sve"
-      BUILD_OPTIMIZATION: "sve-vectorized"
-      SERVICE_PORT: "8000"
+      - "8092:8000"
 
   dashboard:
     platform: linux/arm64
