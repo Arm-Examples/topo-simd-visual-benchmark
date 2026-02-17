@@ -119,9 +119,10 @@ async def process_all(request: Request):
                 "error": str(e)
             }
 
-    results = await asyncio.gather(
-        *(process_backend(name, url) for name, url in BACKENDS)
-    )
+    results = []
+    for name, url in BACKENDS:
+        result = await process_backend(name, url)
+        results.append(result)
 
     # Calculate speedups relative to scalar
     scalar_time = next((r["process_time_ms"] for r in results if r.get("backend") == "scalar" and r.get("status") == "success"), None)
