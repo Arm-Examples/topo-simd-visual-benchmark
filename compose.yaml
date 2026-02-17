@@ -26,7 +26,7 @@ services:
       target: app-sve
       args:
         ENABLE_SVE: yes
-        BUILD_MARCH: "armv8.2-a+sve"
+        BUILD_MARCH: "armv8-a+sve"
     ports:
       - "8092:8000"
 
