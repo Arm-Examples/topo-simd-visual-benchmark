@@ -33,7 +33,7 @@ services:
       args:
         ENABLE_SVE: yes
     ports:
-      - "8092:8000"    
+      - "8092:8000"
     environment:
       BUILD_VARIANT: "sve"
       BUILD_MARCH: "armv9-a+sve"
