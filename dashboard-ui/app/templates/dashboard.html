@@ -11,22 +11,23 @@
       <div class="toolbar">
         <h1>SIMD Benchmark</h1>
         <div class="controls">
-          <label for="image-size">Size</label>
+          <label for="image-size">Image Size:</label>
           <select id="image-size">
-            <option value="128" selected>128x128</option>
+            <option value="128">128x128</option>
             <option value="256">256x256</option>
-            <option value="512">512x512</option>
+            <option value="512" selected>512x512</option>
             <option value="1024">1024x1024</option>
             <option value="2048">2048x2048</option>
           </select>
-          <label for="blur-radius">Radius</label>
+          <label for="blur-radius">Blur Radius:</label>
           <select id="blur-radius">
-            <option value="3">3</option>
             <option value="5">5</option>
             <option value="7">7</option>
             <option value="10" selected>10</option>
+            <option value="13">13</option>
+            <option value="15">15</option>
           </select>
-          <label for="iterations">Iter</label>
+          <label for="iterations">Iterations:</label>
           <select id="iterations">
             <option value="1">1</option>
             <option value="3">3</option>
@@ -173,8 +174,8 @@
         <p>
           The performance differences you see are
           <strong>genuine hardware acceleration</strong>, not synthetic effects.
-          Default settings (128x128, radius 10) are optimized to show clear SIMD
-          speedups.
+          Default settings (512x512, blur radius 10) are optimized to show clear
+          SIMD speedups.
         </p>
       </div>
     </div>
