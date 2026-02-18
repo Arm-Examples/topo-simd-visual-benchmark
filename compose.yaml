@@ -5,7 +5,7 @@ services:
       context: ./processor-runtime
       target: app-scalar
       args:
-        BUILD_MARCH: "armv8-a+nosimd"
+        BUILD_MARCH: "armv8.4-a+fp16+bf16"
     ports:
       - "8090:8000"
 
@@ -15,7 +15,7 @@ services:
       context: ./processor-runtime
       target: app-neon
       args:
-        BUILD_MARCH: "armv8-a"
+        BUILD_MARCH: "armv8.4-a+fp16+bf16+simd+fp16fml+dotprod"
     ports:
       - "8091:8000"
 
@@ -26,7 +26,7 @@ services:
       target: app-sve
       args:
         ENABLE_SVE: yes
-        BUILD_MARCH: "armv8-a+sve"
+        BUILD_MARCH: "armv8.4-a+fp16+bf16+simd+fp16fml+dotprod+sve+sve2"
     ports:
       - "8092:8000"
 

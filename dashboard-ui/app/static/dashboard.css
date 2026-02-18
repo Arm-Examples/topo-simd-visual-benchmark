@@ -167,6 +167,9 @@ select {
 .build-info {
     font-size: 0.8em;
     color: var(--text-secondary);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
 }
 
 .build-info code {
@@ -178,6 +181,8 @@ select {
 .backend-status {
     font-size: 0.75em;
     color: var(--text-secondary);
+    display: flex;
+    gap: 4px;
 }
 
 .metrics {
