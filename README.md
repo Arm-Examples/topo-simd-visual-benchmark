@@ -2,42 +2,39 @@
 
 Visual demonstration of SIMD performance benefits on Arm processors. Compare scalar (no SIMD), NEON (128-bit), and SVE (scalable vector) implementations running identical image processing workloads side-by-side.
 
-Features: NEON, SVE
+It demonstrates:
 
-## Overview
+- Use of multi-stage docker builds with Topo
+- Running and profiling hardware acceleration features with a simple image box blur algorithm
+- An interactive web dashboard to run and view the benchmark results
 
-This demo shows real hardware acceleration through three C++ services compiled with different architecture flags, processing the same box blur algorithm on images. Performance differences are measured in real-time and displayed in an interactive web dashboard.
-
-## Components
-
-### processor-runtime/
-C++ image processing service built in three variants:
-- **Scalar**: No SIMD optimizations (`-march=armv8-a+nosimd`)
-- **NEON**: 128-bit SIMD vectors (`-march=armv8-a`)
-- **SVE**: Scalable Vector Extension (`-march=armv8-a+sve`)
-
-### dashboard-ui/
-Python FastAPI web application providing interactive controls and side-by-side benchmark results.
-
-## Prerequisites
-
-1. **Arm64 host** - Required for building and running the containers
-2. **Docker with BuildKit** - For multi-stage builds
-3. **SVE-capable hardware** (optional) - For seeing actual SVE benefits
+To find out more about the Topo template format, see [arm/topo-template-format](https://github.com/arm/topo-template-format)
 
 ## Usage
 
-The easiest way to deploy is using `topo`. Download and install `topo` from [here](https://github.com/arm/topo)
+To use this template download and install `topo` from [arm/topo](https://github.com/arm/topo)
 
 ### Clone the project:
+
 ```bash
-topo clone simd-visual-benchmark <url-to-repo>
+topo clone ./target-directory template:simd-visual-benchmark
 ```
 
+You will be prompted to provide values for the template parameters.
+
 ### Build and Deploy the project:
+
 ```bash
-cd simd-visual-benchmark
+cd target-directory
 topo deploy --target <ip-address-of-target>
 ```
 
-Then visit: **http://localhost:8095**
+### What you will see
+
+Once deployment completes, open a browser to `http://<ip-address-of-target>:8095`, click "Run" in the top right and you'll
+
+![screenshot of the webpage showing a greeting for Clark Kent](./.screenshot.png)
+
+# Acknowledgments
+
+This template makes use of Arm's [simd-loops](https://gitlab.arm.com/architecture/simd-loops) project to perform the hardware-accelerated convolution.
