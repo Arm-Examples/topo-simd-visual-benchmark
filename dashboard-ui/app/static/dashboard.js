@@ -24,18 +24,13 @@ async function checkBackendStatus() {
         const response = await fetch('/api/backends/status');
         const data = await response.json();
 
-        const statusHtml = data.backends.map(backend => {
-            const color = backend.status === 'online' ? 'var(--sve-color)' : 'var(--scalar-color)';
-            return `<div class="backend-status-item">
-                <span style="color: ${color}">●</span>
-                <span>${backend.name}: ${backend.status}</span>
-            </div>`;
-        }).join('');
-
-        document.getElementById('backend-status').innerHTML = statusHtml;
-
-        // Update build info if available
         data.backends.forEach(backend => {
+            const statusEl = document.getElementById(`${backend.name}-status`);
+            if (statusEl) {
+                const color = backend.status === 'online' ? 'var(--sve-color)' : 'var(--scalar-color)';
+                statusEl.innerHTML = `<span style="color: ${color}">●</span> ${backend.status}`;
+            }
+
             if (backend.build_info) {
                 const buildInfoEl = document.getElementById(`${backend.name}-build-info`);
                 if (buildInfoEl) {
@@ -48,18 +43,6 @@ async function checkBackendStatus() {
     }
 }
 
-function setStatus(text, active = false) {
-    const statusText = document.getElementById('status-text');
-    const statusDot = document.querySelector('.status-dot');
-
-    statusText.textContent = text;
-
-    if (active) {
-        statusDot.classList.add('active');
-    } else {
-        statusDot.classList.remove('active');
-    }
-}
 
 function showLoading(backend, show = true) {
     const loadingEl = document.getElementById(`${backend}-loading`);
@@ -101,7 +84,7 @@ function updateMetrics(backend, data) {
 
         // Render image if available
         if (data.image_data) {
-            renderImage(backend, data.image_data, data.width, data.height);
+            renderImage(backend, data.image_data, data.width, data.height, data.original_image_data);
         }
     } else {
         timeEl.textContent = 'Error';
@@ -110,50 +93,73 @@ function updateMetrics(backend, data) {
     }
 }
 
-function renderImage(backend, base64Data, width, height) {
-    const canvas = document.getElementById(`${backend}-canvas`);
-    if (!canvas) {
-        return;
+function decodeRGBBase64(base64Data, width, height) {
+    const binaryString = atob(base64Data);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
     }
+
+    const expectedBytes = width * height * 3;
+    if (bytes.length < expectedBytes) {
+        console.error(`Not enough data: got ${bytes.length}, need ${expectedBytes}`);
+        return null;
+    }
+
+    const imageData = new ImageData(width, height);
+    for (let i = 0; i < width * height; i++) {
+        const srcIdx = i * 3;
+        const dstIdx = i * 4;
+        imageData.data[dstIdx + 0] = bytes[srcIdx + 0];
+        imageData.data[dstIdx + 1] = bytes[srcIdx + 1];
+        imageData.data[dstIdx + 2] = bytes[srcIdx + 2];
+        imageData.data[dstIdx + 3] = 255;
+    }
+    return imageData;
+}
+
+function renderImage(backend, base64Data, width, height, originalBase64) {
+    const canvas = document.getElementById(`${backend}-canvas`);
+    if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
 
-    // Decode base64
     try {
-        const binaryString = atob(base64Data);
-        const len = binaryString.length;
-        const bytes = new Uint8Array(len);
-        for (let i = 0; i < len; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-        }
+        const imageData = decodeRGBBase64(base64Data, width, height);
+        if (!imageData) return;
 
-        // Always resize canvas to ensure it's correct
         canvas.width = width;
         canvas.height = height;
-
-        // Clear canvas first
-        ctx.clearRect(0, 0, width, height);
-
-        // Create ImageData and render
-        const imageData = ctx.createImageData(width, height);
-
-        // Check if we have enough data
-        const expectedBytes = width * height * 3;
-        if (bytes.length < expectedBytes) {
-            console.error(`Not enough data: got ${bytes.length}, need ${expectedBytes}`);
-            return;
-        }
-
-        for (let i = 0; i < width * height; i++) {
-            const srcIdx = i * 3;
-            const dstIdx = i * 4;
-            imageData.data[dstIdx + 0] = bytes[srcIdx + 0]; // R
-            imageData.data[dstIdx + 1] = bytes[srcIdx + 1]; // G
-            imageData.data[dstIdx + 2] = bytes[srcIdx + 2]; // B
-            imageData.data[dstIdx + 3] = 255; // A
-        }
-
         ctx.putImageData(imageData, 0, 0);
+
+        if (originalBase64) {
+            const origData = decodeRGBBase64(originalBase64, width, height);
+            if (!origData) return;
+
+            const origCanvas = document.createElement('canvas');
+            origCanvas.width = width;
+            origCanvas.height = height;
+            origCanvas.getContext('2d').putImageData(origData, 0, 0);
+
+            const cssW = canvas.clientWidth || width;
+            const scale = width / cssW;
+            const pipCss = 80;
+            const padCss = 6;
+            const borderCss = 2;
+
+            const pipW = Math.round(pipCss * scale);
+            const pipH = Math.round(pipCss * scale);
+            const pad  = Math.round(padCss * scale);
+            const border = Math.round(borderCss * scale);
+
+            const pipX = width  - pipW - pad;
+            const pipY = height - pipH - pad;
+
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+            ctx.fillRect(pipX - border, pipY - border, pipW + border * 2, pipH + border * 2);
+            ctx.drawImage(origCanvas, pipX, pipY, pipW, pipH);
+        }
     } catch (error) {
         console.error(`Error rendering ${backend}:`, error);
     }
@@ -163,8 +169,6 @@ async function runBenchmark() {
     const imageSize = parseInt(document.getElementById('image-size').value);
     const blurRadius = parseInt(document.getElementById('blur-radius').value);
     const iterations = parseInt(document.getElementById('iterations').value);
-
-    setStatus('Running benchmark...', true);
 
     // Show loading indicators
     BACKENDS.forEach(backend => showLoading(backend, true));
@@ -200,10 +204,8 @@ async function runBenchmark() {
             updateMetrics(backend, result);
         });
 
-        setStatus('Benchmark complete', false);
     } catch (error) {
         console.error('Benchmark failed:', error);
-        setStatus(`Error: ${error.message}`, false);
 
         BACKENDS.forEach(backend => showLoading(backend, false));
     }
@@ -216,13 +218,12 @@ function toggleContinuousMode() {
         // Stop continuous mode
         continuousMode = false;
         clearInterval(continuousInterval);
-        button.textContent = 'Start Continuous Mode';
+        button.textContent = 'Continuous';
         button.classList.remove('active');
-        setStatus('Ready', false);
     } else {
         // Start continuous mode
         continuousMode = true;
-        button.textContent = 'Stop Continuous Mode';
+        button.textContent = 'Stop';
         button.classList.add('active');
 
         // Run immediately

@@ -1,195 +1,187 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SIMD Visual Benchmark - Performance Comparison</title>
-    <link rel="stylesheet" href="/static/dashboard.css">
-</head>
-<body>
+    <link rel="stylesheet" href="/static/dashboard.css" />
+  </head>
+  <body>
     <div class="container">
-        <header>
-            <h1>SIMD Performance Visualization</h1>
-            <p class="subtitle">
-                Real-time comparison of
-                {% if sve_enabled %}
-                    Scalar vs NEON vs SVE
-                {% else %}
-                    Scalar vs NEON
-                {% endif %}
-                on identical workloads
-            </p>
-        </header>
-
+      <div class="toolbar">
+        <h1>SIMD Benchmark</h1>
         <div class="controls">
-            <div class="control-group">
-                <label for="image-size">Image Size:</label>
-                <select id="image-size">
-                    <option value="128" selected>128x128</option>
-                    <option value="256">256x256</option>
-                    <option value="512">512x512</option>
-                    <option value="1024">1024x1024</option>
-                    <option value="2048">2048x2048</option>
-                </select>
-            </div>
+          <label for="image-size">Image Size:</label>
+          <select id="image-size">
+            <option value="128">128x128</option>
+            <option value="256">256x256</option>
+            <option value="512" selected>512x512</option>
+            <option value="1024">1024x1024</option>
+            <option value="2048">2048x2048</option>
+          </select>
+          <label for="blur-radius">Blur Radius:</label>
+          <select id="blur-radius">
+            <option value="5">5</option>
+            <option value="7">7</option>
+            <option value="10" selected>10</option>
+            <option value="13">13</option>
+            <option value="15">15</option>
+          </select>
+          <label for="iterations">Iterations:</label>
+          <select id="iterations">
+            <option value="1">1</option>
+            <option value="3">3</option>
+            <option value="5" selected>5</option>
+            <option value="10">10</option>
+          </select>
+          <button id="run-benchmark" class="primary-button">Run</button>
+          <button id="continuous-mode" class="secondary-button">
+            Continuous
+          </button>
+        </div>
+      </div>
 
-            <div class="control-group">
-                <label for="blur-radius">Blur Radius:</label>
-                <select id="blur-radius">
-                    <option value="3">3 pixels</option>
-                    <option value="5">5 pixels</option>
-                    <option value="7">7 pixels</option>
-                    <option value="10" selected">10 pixels</option>
-                </select>
+      <div class="results-grid {% if not sve_enabled %}no-sve{% endif %}">
+        <!-- Scalar Column -->
+        <div class="result-column scalar-column">
+          <div class="column-header scalar">
+            <h2>Scalar (No SIMD)</h2>
+            <div class="column-header-row">
+              <span class="build-info" id="scalar-build-info"
+                ><code>armv8-a+nosimd</code></span
+              >
+              <span class="backend-status" id="scalar-status"></span>
             </div>
-
-            <div class="control-group">
-                <label for="iterations">Iterations:</label>
-                <select id="iterations">
-                    <option value="1">1 pass</option>
-                    <option value="3">3 passes</option>
-                    <option value="5" selected>5 passes</option>
-                    <option value="10">10 passes</option>
-                </select>
+          </div>
+          <div class="metrics">
+            <div class="metric">
+              <span class="metric-label">Processing Time:</span>
+              <span class="metric-value" id="scalar-time">—</span>
             </div>
-
-            <button id="run-benchmark" class="primary-button">Run Benchmark</button>
-            <button id="continuous-mode" class="secondary-button">Start Continuous Mode</button>
+            <div class="metric">
+              <span class="metric-label">FPS:</span>
+              <span class="metric-value" id="scalar-fps">—</span>
+            </div>
+            <div class="metric speedup">
+              <span class="metric-label">Speedup:</span>
+              <span class="metric-value" id="scalar-speedup">1.00x</span>
+            </div>
+          </div>
+          <div class="image-container">
+            <canvas id="scalar-canvas" width="512" height="512"></canvas>
+            <div class="loading" id="scalar-loading">Processing...</div>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="scalar-progress"></div>
+          </div>
         </div>
 
-        <div class="status-bar">
-            <div class="status-indicator" id="status-indicator">
-                <span class="status-dot"></span>
-                <span id="status-text">Ready</span>
+        <!-- NEON Column -->
+        <div class="result-column neon-column">
+          <div class="column-header neon">
+            <h2>NEON (128-bit SIMD)</h2>
+            <div class="column-header-row">
+              <span class="build-info" id="neon-build-info"
+                ><code>armv8-a</code></span
+              >
+              <span class="backend-status" id="neon-status"></span>
             </div>
-            <div id="backend-status"></div>
+          </div>
+          <div class="metrics">
+            <div class="metric">
+              <span class="metric-label">Processing Time:</span>
+              <span class="metric-value" id="neon-time">—</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">FPS:</span>
+              <span class="metric-value" id="neon-fps">—</span>
+            </div>
+            <div class="metric speedup">
+              <span class="metric-label">Speedup:</span>
+              <span class="metric-value" id="neon-speedup">—</span>
+            </div>
+          </div>
+          <div class="image-container">
+            <canvas id="neon-canvas" width="512" height="512"></canvas>
+            <div class="loading" id="neon-loading">Processing...</div>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="neon-progress"></div>
+          </div>
         </div>
 
-        <div class="results-grid {% if not sve_enabled %}two-columns{% endif %}">
-            <!-- Scalar Column -->
-            <div class="result-column scalar-column">
-                <div class="column-header scalar">
-                    <h2>Scalar (No SIMD)</h2>
-                    <div class="build-info" id="scalar-build-info">
-                        <code>armv8-a+nosimd</code>
-                    </div>
-                </div>
-                <div class="metrics">
-                    <div class="metric">
-                        <span class="metric-label">Processing Time:</span>
-                        <span class="metric-value" id="scalar-time">—</span>
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">FPS:</span>
-                        <span class="metric-value" id="scalar-fps">—</span>
-                    </div>
-                    <div class="metric speedup">
-                        <span class="metric-label">Speedup:</span>
-                        <span class="metric-value" id="scalar-speedup">1.00x</span>
-                    </div>
-                </div>
-                <div class="image-container">
-                    <canvas id="scalar-canvas" width="512" height="512"></canvas>
-                    <div class="loading" id="scalar-loading">Processing...</div>
-                </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="scalar-progress"></div>
-                </div>
+        {% if sve_enabled %}
+        <!-- SVE Column -->
+        <div class="result-column sve-column">
+          <div class="column-header sve">
+            <h2>SVE (Scalable Vector)</h2>
+            <div class="column-header-row">
+              <span class="build-info" id="sve-build-info"
+                ><code>armv8-a+sve</code></span
+              >
+              <span class="backend-status" id="sve-status"></span>
             </div>
-
-            <!-- NEON Column -->
-            <div class="result-column neon-column">
-                <div class="column-header neon">
-                    <h2>NEON (128-bit SIMD)</h2>
-                    <div class="build-info" id="neon-build-info">
-                        <code>armv8-a</code>
-                    </div>
-                </div>
-                <div class="metrics">
-                    <div class="metric">
-                        <span class="metric-label">Processing Time:</span>
-                        <span class="metric-value" id="neon-time">—</span>
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">FPS:</span>
-                        <span class="metric-value" id="neon-fps">—</span>
-                    </div>
-                    <div class="metric speedup">
-                        <span class="metric-label">Speedup:</span>
-                        <span class="metric-value" id="neon-speedup">—</span>
-                    </div>
-                </div>
-                <div class="image-container">
-                    <canvas id="neon-canvas" width="512" height="512"></canvas>
-                    <div class="loading" id="neon-loading">Processing...</div>
-                </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="neon-progress"></div>
-                </div>
+          </div>
+          <div class="metrics">
+            <div class="metric">
+              <span class="metric-label">Processing Time:</span>
+              <span class="metric-value" id="sve-time">—</span>
             </div>
-
-            {% if sve_enabled %}
-            <!-- SVE Column -->
-            <div class="result-column sve-column">
-                <div class="column-header sve">
-                    <h2>SVE (Scalable Vector)</h2>
-                    <div class="build-info" id="sve-build-info">
-                        <code>armv8-a+sve</code>
-                    </div>
-                </div>
-                <div class="metrics">
-                    <div class="metric">
-                        <span class="metric-label">Processing Time:</span>
-                        <span class="metric-value" id="sve-time">—</span>
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">FPS:</span>
-                        <span class="metric-value" id="sve-fps">—</span>
-                    </div>
-                    <div class="metric speedup">
-                        <span class="metric-label">Speedup:</span>
-                        <span class="metric-value" id="sve-speedup">—</span>
-                    </div>
-                </div>
-                <div class="image-container">
-                    <canvas id="sve-canvas" width="512" height="512"></canvas>
-                    <div class="loading" id="sve-loading">Processing...</div>
-                </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="sve-progress"></div>
-                </div>
+            <div class="metric">
+              <span class="metric-label">FPS:</span>
+              <span class="metric-value" id="sve-fps">—</span>
             </div>
+            <div class="metric speedup">
+              <span class="metric-label">Speedup:</span>
+              <span class="metric-value" id="sve-speedup">—</span>
+            </div>
+          </div>
+          <div class="image-container">
+            <canvas id="sve-canvas" width="512" height="512"></canvas>
+            <div class="loading" id="sve-loading">Processing...</div>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="sve-progress"></div>
+          </div>
         </div>
         {% endif %}
+      </div>
 
-        <div class="explanation">
-            <h3>About This Demo</h3>
-            <p>
-                This benchmark demonstrates the real performance impact of SIMD (Single Instruction, Multiple Data)
-                optimizations on Arm processors. All three backends run <strong>identical C++ code</strong> performing
-                box blur convolution on images, but compiled with different architecture flags:
-            </p>
-            <ul>
-                <li><strong>Scalar:</strong> No SIMD, processes one value at a time</li>
-                <li><strong>NEON:</strong> 128-bit SIMD, processes 4 floats simultaneously</li>
-                {% if sve_enabled %}
-                <li><strong>SVE:</strong> Scalable vectors (128-2048 bits), processes even more data in parallel</li>
-                {% endif %}
-            </ul>
-            <p>
-                The performance differences you see are <strong>genuine hardware acceleration</strong>, not synthetic
-                effects. Default settings (128x128, radius 10) are optimized to show clear SIMD speedups.
-            </p>
-            <p>
-                <strong>Experiment tip:</strong> Performance characteristics vary dramatically with image size and blur radius!
-                Try different combinations to discover when SIMD shines (small images, large kernels) versus when it struggles
-                (certain middle-ground sizes show surprising scalar wins). Real-world optimization requires measurement!
-            </p>
-        </div>
+      <div class="explanation">
+        <h3>About This Demo</h3>
+        <p>
+          This benchmark demonstrates the real performance impact of SIMD
+          (Single Instruction, Multiple Data) optimizations on Arm processors.
+          All three backends run <strong>identical C++ code</strong> performing
+          box blur convolution on images, but compiled with different
+          architecture flags:
+        </p>
+        <ul>
+          <li>
+            <strong>Scalar:</strong> No SIMD, processes one value at a time
+          </li>
+          <li>
+            <strong>NEON:</strong> 128-bit SIMD, processes 4 floats
+            simultaneously
+          </li>
+          {% if sve_enabled %}
+          <li>
+            <strong>SVE:</strong> Scalable vectors (128-2048 bits), processes
+            even more data in parallel
+          </li>
+          {% endif %}
+        </ul>
+        <p>
+          The performance differences you see are
+          <strong>genuine hardware acceleration</strong>, not synthetic effects.
+          Default settings (512x512, blur radius 10) are optimized to show clear
+          SIMD speedups.
+        </p>
+      </div>
     </div>
     <script>
-        window.dashboardConfig = {{ {"backends": backends, "sveEnabled": sve_enabled}|tojson }};
+      window.dashboardConfig = {{ {"backends": backends, "sveEnabled": sve_enabled}|tojson }};
     </script>
     <script src="/static/dashboard.js"></script>
-</body>
+  </body>
 </html>

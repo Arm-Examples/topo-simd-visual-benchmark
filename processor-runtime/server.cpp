@@ -156,6 +156,9 @@ int main() {
             auto start_total = std::chrono::high_resolution_clock::now();
             Image img = generate_test_image(width, height);
 
+            // Encode original image before processing
+            std::string original_image_data = image_to_base64(img);
+
             // Run multiple iterations for better timing
             auto start_process = std::chrono::high_resolution_clock::now();
             for (int i = 0; i < iterations; i++) {
@@ -180,7 +183,8 @@ int main() {
                 {"process_time_ms", process_time_ms},
                 {"total_time_ms", total_time_ms},
                 {"iterations", iterations},
-                {"image_data", image_data}
+                {"image_data", image_data},
+                {"original_image_data", original_image_data}
             };
 
             res.set_content(response.dump(), "application/json");
