@@ -1,7 +1,7 @@
-#include "helpers.h"
-#include "loops.h"
+#include "simd-loops/helpers.h"
+#include "simd-loops/loops.h"
 
-#include "loop_222.c"
+#include "simd-loops/loop_222.c"
 
 loop_function_t __ptr_loop_222 = 0;
 

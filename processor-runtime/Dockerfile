@@ -22,8 +22,11 @@ RUN git clone --depth 1 --branch v3.11.2 https://github.com/nlohmann/json.git &&
     cp -r json/include/nlohmann/. /usr/local/include/nlohmann/ && \
     rm -rf json
 
+# Copy simd-loops files
+COPY simd-loops/ ./simd-loops/
+
 # Copy source files
-COPY server.cpp helpers.c helpers.h loops.h loop_222.c loop_222_wrapper.c static_rand.c ./
+COPY server.cpp loop_222_wrapper.c ./ 
 
 # Scalar variant - no SIMD optimizations
 FROM builder-base AS builder-scalar
@@ -38,8 +41,8 @@ ENV CC=clang-20 \
     CXX=clang++-20 \
     STRIP=strip
 
-RUN ${CC} ${CFLAGS} -I/usr/local/include -I. -c helpers.c -o helpers.o && \
-    ${CC} ${CFLAGS} -I/usr/local/include -I. -c static_rand.c -o static_rand.o && \
+RUN ${CC} ${CFLAGS} -I/usr/local/include -I. -c simd-loops/helpers.c -o helpers.o && \
+    ${CC} ${CFLAGS} -I/usr/local/include -I. -c simd-loops/static_rand.c -o static_rand.o && \
     ${CC} ${CFLAGS} -I/usr/local/include -I. -c loop_222_wrapper.c -o loop_222_wrapper.o && \
     ${CXX} ${CXXFLAGS} -I/usr/local/include -I. -c server.cpp -o server.o && \
     ${CXX} -o processor server.o helpers.o static_rand.o loop_222_wrapper.o \
@@ -58,8 +61,8 @@ ENV CC=clang-20 \
     CXX=clang++-20 \
     STRIP=strip
 
-RUN ${CC} ${CFLAGS} -I/usr/local/include -I. -c helpers.c -o helpers.o && \
-    ${CC} ${CFLAGS} -I/usr/local/include -I. -c static_rand.c -o static_rand.o && \
+RUN ${CC} ${CFLAGS} -I/usr/local/include -I. -c simd-loops/helpers.c -o helpers.o && \
+    ${CC} ${CFLAGS} -I/usr/local/include -I. -c simd-loops/static_rand.c -o static_rand.o && \
     ${CC} ${CFLAGS} -I/usr/local/include -I. -c loop_222_wrapper.c -o loop_222_wrapper.o && \
     ${CXX} ${CXXFLAGS} -I/usr/local/include -I. -c server.cpp -o server.o && \
     ${CXX} -o processor server.o helpers.o static_rand.o loop_222_wrapper.o \
@@ -78,8 +81,8 @@ ENV CC=clang-20 \
     CXX=clang++-20 \
     STRIP=strip
 
-RUN ${CC} ${CFLAGS} -I/usr/local/include -I. -c helpers.c -o helpers.o && \
-    ${CC} ${CFLAGS} -I/usr/local/include -I. -c static_rand.c -o static_rand.o && \
+RUN ${CC} ${CFLAGS} -I/usr/local/include -I. -c simd-loops/helpers.c -o helpers.o && \
+    ${CC} ${CFLAGS} -I/usr/local/include -I. -c simd-loops/static_rand.c -o static_rand.o && \
     ${CC} ${CFLAGS} -I/usr/local/include -I. -c loop_222_wrapper.c -o loop_222_wrapper.o && \
     ${CXX} ${CXXFLAGS} -I/usr/local/include -I. -c server.cpp -o server.o && \
     ${CXX} -o processor server.o helpers.o static_rand.o loop_222_wrapper.o \

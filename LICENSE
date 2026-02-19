@@ -1,3 +1,17 @@
+LICENSING NOTICE
+================================================================================
+
+This project is primarily licensed under Apache-2.0 (see below).
+
+Components in the following directories are licensed under BSD-3-Clause:
+- processor-runtime/simd-loops/
+
+These components are derived from the simd-loops project
+(https://gitlab.arm.com/architecture/simd-loops) and redistributed under their
+original BSD-3-Clause license terms.
+
+================================================================================
+
                                  Apache License
                            Version 2.0, January 2004
                         http://www.apache.org/licenses/

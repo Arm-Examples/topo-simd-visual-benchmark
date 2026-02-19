@@ -16,7 +16,7 @@ extern "C" {
 #ifndef restrict
 #define restrict __restrict
 #endif
-#include "helpers.h"
+#include "simd-loops/helpers.h"
 #undef restrict
 }
 
