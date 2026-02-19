@@ -166,6 +166,9 @@ select {
 .build-info {
     font-size: 0.8em;
     color: var(--text-secondary);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
 }
 
 .build-info code {
@@ -177,6 +180,8 @@ select {
 .backend-status {
     font-size: 0.75em;
     color: var(--text-secondary);
+    display: flex;
+    gap: 4px;
 }
 
 .metrics {
@@ -283,14 +288,6 @@ canvas {
 
 .explanation li {
     margin: 4px 0;
-}
-
-.error {
-    color: var(--scalar-color);
-    padding: 10px;
-    background: rgba(231, 76, 60, 0.1);
-    border-radius: 5px;
-    margin: 10px 0;
 }
 
 @media (max-width: 768px) {

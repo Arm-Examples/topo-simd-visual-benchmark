@@ -48,7 +48,7 @@
             <h2>Scalar (No SIMD)</h2>
             <div class="column-header-row">
               <span class="build-info" id="scalar-build-info"
-                ><code>armv8-a+nosimd</code></span
+                ><code>armv8.4-a+fp16+bf16</code></span
               >
               <span class="backend-status" id="scalar-status"></span>
             </div>
@@ -82,7 +82,7 @@
             <h2>NEON (128-bit SIMD)</h2>
             <div class="column-header-row">
               <span class="build-info" id="neon-build-info"
-                ><code>armv8-a</code></span
+                ><code>armv8.4-a+fp16+bf16+simd+fp16fml+dotprod</code></span
               >
               <span class="backend-status" id="neon-status"></span>
             </div>
@@ -117,7 +117,7 @@
             <h2>SVE (Scalable Vector)</h2>
             <div class="column-header-row">
               <span class="build-info" id="sve-build-info"
-                ><code>armv8-a+sve</code></span
+                ><code>armv8.4-a+fp16+bf16+simd+fp16fml+dotprod+sve+sve2</code></span
               >
               <span class="backend-status" id="sve-status"></span>
             </div>
@@ -180,7 +180,7 @@
       </div>
     </div>
     <script>
-      window.dashboardConfig = {{ {"backends": backends, "sveEnabled": sve_enabled}|tojson }};
+      window.dashboardConfig = {{ {"backends": backends}|tojson }};
     </script>
     <script src="/static/dashboard.js"></script>
   </body>

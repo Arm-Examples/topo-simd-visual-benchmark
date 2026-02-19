@@ -33,9 +33,6 @@ async def dashboard(request: Request):
     """Render the main dashboard page"""
     context = {
         "request": request,
-        "scalar_url": SCALAR_URL,
-        "neon_url": NEON_URL,
-        "sve_url": SVE_URL if SVE_ENABLED else None,
         "sve_enabled": SVE_ENABLED,
         "backends": BACKEND_NAMES,
     }
@@ -54,12 +51,11 @@ async def backends_status():
     async def check_backend(name: str, url: str):
         try:
             async with httpx.AsyncClient(timeout=5.0) as client:
-                response = await client.get(f"{url}/health")
                 build_info = await client.get(f"{url}/build-info")
                 return {
                     "name": name,
                     "url": url,
-                    "status": "online" if response.status_code == 200 else "offline",
+                    "status": "online" if build_info.status_code == 200 else "offline",
                     "build_info": build_info.json() if build_info.status_code == 200 else None
                 }
         except Exception as e:

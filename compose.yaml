@@ -3,9 +3,10 @@ services:
     platform: linux/arm64
     build:
       context: ./processor-runtime
-      target: app-scalar
+      target: app
       args:
-        BUILD_MARCH: "armv8-a+nosimd"
+        BUILD_MARCH: "armv8.4-a+fp16+bf16"
+        BUILDER_LAYER: builder-scalar
     ports:
       - "8090:8000"
 
@@ -13,9 +14,10 @@ services:
     platform: linux/arm64
     build:
       context: ./processor-runtime
-      target: app-neon
+      target: app
       args:
-        BUILD_MARCH: "armv8-a"
+        BUILD_MARCH: "armv8.4-a+fp16+bf16+simd+fp16fml+dotprod"
+        BUILDER_LAYER: builder-neon
     ports:
       - "8091:8000"
 
@@ -23,10 +25,11 @@ services:
     platform: linux/arm64
     build:
       context: ./processor-runtime
-      target: app-sve
+      target: app
       args:
         ENABLE_SVE: yes
-        BUILD_MARCH: "armv8-a+sve"
+        BUILD_MARCH: "armv8.4-a+fp16+bf16+simd+fp16fml+dotprod+sve+sve2"
+        BUILDER_LAYER: builder-sve
     ports:
       - "8092:8000"
 

@@ -1,16 +1,16 @@
 # Multi-stage Dockerfile for building scalar, NEON, and SVE variants
+ARG BUILDER_LAYER=ubuntu:24.04
 
 # Base builder stage with common dependencies
 FROM ubuntu:24.04 AS builder-base
 
+ARG BUILD_MARCH
+ENV BUILD_MARCH=${BUILD_MARCH}
+
 RUN apt-get update && apt-get install -y \
     build-essential \
     git \
-    wget \
-    gcc-aarch64-linux-gnu \
-    g++-aarch64-linux-gnu \
-    binutils-aarch64-linux-gnu \
-    && rm -rf /var/lib/apt/lists/*
+    clang-20
 
 WORKDIR /build
 
@@ -26,118 +26,74 @@ RUN git clone --depth 1 --branch v3.11.2 https://github.com/nlohmann/json.git &&
     cp -r json/include/nlohmann/. /usr/local/include/nlohmann/ && \
     rm -rf json
 
+# Copy simd-loops files
+COPY simd-loops/ ./simd-loops/
+
 # Copy source files
-COPY image_processor.cpp server.cpp ./
+COPY server.cpp loop_222_wrapper.c ./ 
 
 # Scalar variant - no SIMD optimizations
 FROM builder-base AS builder-scalar
 
-ARG BUILD_MARCH
+ENV FEAT_DEFS="-DHAVE_NATIVE -U__ARM_NEON -U__ARM_FEATURE_SVE -U__ARM_FEATURE_SVE2 -U__ARM_FEATURE_SVE2p1 -U__ARM_FEATURE_SME -U__ARM_FEATURE_SME2 -U__ARM_FEATURE_SME2p1"
+ENV COMMON_DEFS="-DMAX_GLOBAL_MEMORY_KIB=16384 -DPROBLEM_SIZE_LIMIT_KIB=64 -DMAX_VL=512 -MMD -Wall -Werror -O2 -fno-tree-vectorize"
+ENV CFLAGS="-march=${BUILD_MARCH} ${COMMON_DEFS} ${FEAT_DEFS}"
+ENV CXXFLAGS="${CFLAGS} -std=c++17"
+ENV CC=clang-20 \
+    CXX=clang++-20 \
+    STRIP=strip
 
-ENV CXXFLAGS="-O2 -march=${BUILD_MARCH} -fno-tree-vectorize -fno-tree-slp-vectorize"
-ENV CC=aarch64-linux-gnu-gcc \
-    CXX=aarch64-linux-gnu-g++ \
-    STRIP=aarch64-linux-gnu-strip
-
-RUN ${CXX} -o processor server.cpp image_processor.cpp \
-    ${CXXFLAGS} \
-    -std=c++17 \
-    -pthread \
-    -I/usr/local/include \
-    -static-libstdc++ \
-    -static-libgcc \
+RUN ${CC} ${CFLAGS} -I/usr/local/include -I. -c simd-loops/helpers.c -o helpers.o && \
+    ${CC} ${CFLAGS} -I/usr/local/include -I. -c simd-loops/static_rand.c -o static_rand.o && \
+    ${CC} ${CFLAGS} -I/usr/local/include -I. -c loop_222_wrapper.c -o loop_222_wrapper.o && \
+    ${CXX} ${CXXFLAGS} -I/usr/local/include -I. -c server.cpp -o server.o && \
+    ${CXX} -o processor server.o helpers.o static_rand.o loop_222_wrapper.o \
     && ${STRIP} processor
 
 # NEON variant - NEON optimizations enabled
 FROM builder-base AS builder-neon
 
-ARG BUILD_MARCH
+ENV FEAT_DEFS="-D__ARM_NEON -U__ARM_FEATURE_SVE -U__ARM_FEATURE_SVE2 -U__ARM_FEATURE_SVE2p1 -U__ARM_FEATURE_SME -U__ARM_FEATURE_SME2 -U__ARM_FEATURE_SME2p1"
+ENV COMMON_DEFS="-DMAX_GLOBAL_MEMORY_KIB=16384 -DPROBLEM_SIZE_LIMIT_KIB=64 -DMAX_VL=512 -MMD -Wall -Werror -O2 -fno-tree-vectorize"
+ENV CFLAGS="-march=${BUILD_MARCH} ${COMMON_DEFS} ${FEAT_DEFS}"
+ENV CXXFLAGS="${CFLAGS} -std=c++17"
+ENV CC=clang-20 \
+    CXX=clang++-20 \
+    STRIP=strip
 
-ENV CXXFLAGS="-O3 -march=${BUILD_MARCH} -mtune=cortex-a72 -ftree-vectorize"
-ENV CC=aarch64-linux-gnu-gcc \
-    CXX=aarch64-linux-gnu-g++ \
-    STRIP=aarch64-linux-gnu-strip
-
-RUN ${CXX} -o processor server.cpp image_processor.cpp \
-    ${CXXFLAGS} \
-    -std=c++17 \
-    -pthread \
-    -I/usr/local/include \
-    -static-libstdc++ \
-    -static-libgcc \
+RUN ${CC} ${CFLAGS} -I/usr/local/include -I. -c simd-loops/helpers.c -o helpers.o && \
+    ${CC} ${CFLAGS} -I/usr/local/include -I. -c simd-loops/static_rand.c -o static_rand.o && \
+    ${CC} ${CFLAGS} -I/usr/local/include -I. -c loop_222_wrapper.c -o loop_222_wrapper.o && \
+    ${CXX} ${CXXFLAGS} -I/usr/local/include -I. -c server.cpp -o server.o && \
+    ${CXX} -o processor server.o helpers.o static_rand.o loop_222_wrapper.o \
     && ${STRIP} processor
 
 # SVE variant - SVE optimizations enabled
 FROM builder-base AS builder-sve
 
-ARG BUILD_MARCH
+ENV FEAT_DEFS="-D__ARM_FEATURE_SVE2 -U__ARM_FEATURE_SVE2p1 -U__ARM_FEATURE_SME -U__ARM_FEATURE_SME2 -U__ARM_FEATURE_SME2p1"
+ENV COMMON_DEFS="-DMAX_GLOBAL_MEMORY_KIB=16384 -DPROBLEM_SIZE_LIMIT_KIB=64 -DMAX_VL=512 -MMD -Wall -Werror -O2 -fno-tree-vectorize"
+ENV CFLAGS="-march=${BUILD_MARCH} ${COMMON_DEFS} ${FEAT_DEFS}"
+ENV CXXFLAGS="${CFLAGS} -std=c++17"
+ENV CC=clang-20 \
+    CXX=clang++-20 \
+    STRIP=strip
 
-ENV CXXFLAGS="-O3 -march=${BUILD_MARCH} -mtune=neoverse-v2 -ftree-vectorize"
-ENV CC=aarch64-linux-gnu-gcc \
-    CXX=aarch64-linux-gnu-g++ \
-    STRIP=aarch64-linux-gnu-strip
-
-RUN ${CXX} -o processor server.cpp image_processor.cpp \
-    ${CXXFLAGS} \
-    -std=c++17 \
-    -pthread \
-    -I/usr/local/include \
-    -static-libstdc++ \
-    -static-libgcc \
+RUN ${CC} ${CFLAGS} -I/usr/local/include -I. -c simd-loops/helpers.c -o helpers.o && \
+    ${CC} ${CFLAGS} -I/usr/local/include -I. -c simd-loops/static_rand.c -o static_rand.o && \
+    ${CC} ${CFLAGS} -I/usr/local/include -I. -c loop_222_wrapper.c -o loop_222_wrapper.o && \
+    ${CXX} ${CXXFLAGS} -I/usr/local/include -I. -c server.cpp -o server.o && \
+    ${CXX} -o processor server.o helpers.o static_rand.o loop_222_wrapper.o \
     && ${STRIP} processor
 
-# Final scalar runtime
-FROM ubuntu:24.04 AS app-scalar
-
-ARG BUILD_MARCH
-
-ENV BUILD_VARIANT=scalar \
-    BUILD_MARCH=${BUILD_MARCH} \
-    BUILD_OPTIMIZATION=scalar-only \
-    SERVICE_PORT=8000
-
-WORKDIR /app
-
-COPY --from=builder-scalar /build/processor .
-
-EXPOSE 8000
-
-CMD ["./processor"]
-
-# Final NEON runtime
-FROM ubuntu:24.04 AS app-neon
-
-ARG BUILD_MARCH
-
-ENV BUILD_VARIANT=neon \
-    BUILD_MARCH=${BUILD_MARCH} \
-    BUILD_OPTIMIZATION=neon-vectorized \
-    SERVICE_PORT=8000
-
-WORKDIR /app
-
-COPY --from=builder-neon /build/processor .
-
-EXPOSE 8000
-
-CMD ["./processor"]
-
-# Final SVE runtime
-FROM ubuntu:24.04 AS app-sve
+# Final app stage
+FROM ${BUILDER_LAYER} AS app
 
 ARG ENABLE_SVE
-ARG BUILD_MARCH
 
-ENV BUILD_VARIANT=sve \
-    BUILD_MARCH=${BUILD_MARCH} \
-    BUILD_OPTIMIZATION=sve-vectorized \
-    ENABLE_SVE=${ENABLE_SVE} \
+ENV ENABLE_SVE=${ENABLE_SVE} \
     SERVICE_PORT=8000
-
-WORKDIR /app
-
-COPY --from=builder-sve /build/processor .
 
 EXPOSE 8000
 
-CMD ["./processor"]
+CMD ["/build/processor"]
