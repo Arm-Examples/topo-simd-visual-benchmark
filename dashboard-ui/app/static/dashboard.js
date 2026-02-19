@@ -1,6 +1,5 @@
 const DASHBOARD_CONFIG = window.dashboardConfig || {
     backends: ['scalar', 'neon', 'sve'],
-    sveEnabled: true,
 };
 const BACKENDS = DASHBOARD_CONFIG.backends;
 

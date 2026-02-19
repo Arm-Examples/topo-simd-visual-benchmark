@@ -4,8 +4,6 @@
 #include <string>
 #include <vector>
 #include <cstdint>
-#include <sstream>
-#include <iomanip>
 #include <algorithm>
 #include <cctype>
 #include <iostream>
@@ -87,7 +85,6 @@ static inline uint64_t loop_222_svl_h() {
     uint64_t svl_h = 0;
     asm volatile("cnth %[v]" : [v] "=r"(svl_h)::);
     return svl_h;
-    return 0;
 }
 #endif
 
@@ -242,16 +239,10 @@ std::string image_to_base64(const Image& img) {
 int main() {
     Server svr;
 
-    // Get build variant from environment
-    const char* build_variant = std::getenv("BUILD_VARIANT");
     const char* build_march = std::getenv("BUILD_MARCH");
-    const char* build_optimization = std::getenv("BUILD_OPTIMIZATION");
-
     const char* service_port_env = std::getenv("SERVICE_PORT");
 
-    std::string variant = build_variant ? build_variant : "unknown";
     std::string march = build_march ? build_march : "unknown";
-    std::string optimization = build_optimization ? build_optimization : "unknown";
     int service_port = 8000;
 
     if (service_port_env) {
@@ -275,37 +266,15 @@ int main() {
         }
     }
 
-    if (variant == "sve" && !sve_enabled) {
-        std::cout << "ENABLE_SVE disabled for SVE variant; exiting service." << std::endl;
+    if (march.find("sve") != std::string::npos && !sve_enabled) {
+        std::cout << "ENABLE_SVE disabled for " << march << "; exiting service." << std::endl;
         return 0;
     }
-
-    // Health check endpoint
-    svr.Get("/health", [](const Request& req, Response& res) {
-        json response = {
-            {"status", "healthy"}
-        };
-        res.set_content(response.dump(), "application/json");
-    });
 
     // Build info endpoint
     svr.Get("/build-info", [&](const Request& req, Response& res) {
         json response = {
-            {"variant", variant},
             {"build_march", march},
-            {"build_optimization", optimization},
-            {"simd_support", {
-#ifdef __ARM_NEON
-                {"neon", true},
-#else
-                {"neon", false},
-#endif
-#ifdef __ARM_FEATURE_SVE
-                {"sve", true}
-#else
-                {"sve", false}
-#endif
-            }}
         };
         res.set_content(response.dump(), "application/json");
     });
@@ -320,11 +289,7 @@ int main() {
             int blur_radius = body.value("blur_radius", 10);
             int iterations = body.value("iterations", 10);
 
-            // Generate test image
-            auto start_total = std::chrono::high_resolution_clock::now();
             Image img = generate_test_image(width, height);
-
-            // Encode original image before processing
             std::string original_image_data = image_to_base64(img);
 
             // Run multiple iterations for better timing
@@ -333,14 +298,8 @@ int main() {
                 img = process_image(img, blur_radius);
             }
             auto end_process = std::chrono::high_resolution_clock::now();
-
-            auto end_total = std::chrono::high_resolution_clock::now();
-
-            // Calculate timings
             double process_time_ms = std::chrono::duration<double, std::milli>(
                 end_process - start_process).count() / iterations;
-            double total_time_ms = std::chrono::duration<double, std::milli>(
-                end_total - start_total).count();
 
             // Convert image to base64
             std::string image_data = image_to_base64(img);
@@ -349,7 +308,6 @@ int main() {
                 {"width", img.width},
                 {"height", img.height},
                 {"process_time_ms", process_time_ms},
-                {"total_time_ms", total_time_ms},
                 {"iterations", iterations},
                 {"image_data", image_data},
                 {"original_image_data", original_image_data}
@@ -379,9 +337,9 @@ int main() {
         res.status = 204;
     });
 
-    std::cout << "Starting " << variant << " processor service on port "
+    std::cout << "Starting processor service on port "
               << service_port << "..." << std::endl;
-    std::cout << "Build flags: " << march << " (" << optimization << ")" << std::endl;
+    std::cout << "Build flags: " << march << std::endl;
 
     svr.listen("0.0.0.0", service_port);
 

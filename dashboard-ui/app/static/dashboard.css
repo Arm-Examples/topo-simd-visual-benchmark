@@ -290,14 +290,6 @@ canvas {
     margin: 4px 0;
 }
 
-.error {
-    color: var(--scalar-color);
-    padding: 10px;
-    background: rgba(231, 76, 60, 0.1);
-    border-radius: 5px;
-    margin: 10px 0;
-}
-
 @media (max-width: 768px) {
     .toolbar {
         flex-direction: column;

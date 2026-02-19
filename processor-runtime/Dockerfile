@@ -1,7 +1,11 @@
 # Multi-stage Dockerfile for building scalar, NEON, and SVE variants
+ARG BUILDER_LAYER=ubuntu:24.04
 
 # Base builder stage with common dependencies
 FROM ubuntu:24.04 AS builder-base
+
+ARG BUILD_MARCH
+ENV BUILD_MARCH=${BUILD_MARCH}
 
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -31,9 +35,7 @@ COPY server.cpp loop_222_wrapper.c ./
 # Scalar variant - no SIMD optimizations
 FROM builder-base AS builder-scalar
 
-ARG BUILD_MARCH
 ENV FEAT_DEFS="-DHAVE_NATIVE -U__ARM_NEON -U__ARM_FEATURE_SVE -U__ARM_FEATURE_SVE2 -U__ARM_FEATURE_SVE2p1 -U__ARM_FEATURE_SME -U__ARM_FEATURE_SME2 -U__ARM_FEATURE_SME2p1"
-
 ENV COMMON_DEFS="-DMAX_GLOBAL_MEMORY_KIB=16384 -DPROBLEM_SIZE_LIMIT_KIB=64 -DMAX_VL=512 -MMD -Wall -Werror -O2 -fno-tree-vectorize"
 ENV CFLAGS="-march=${BUILD_MARCH} ${COMMON_DEFS} ${FEAT_DEFS}"
 ENV CXXFLAGS="${CFLAGS} -std=c++17"
@@ -51,9 +53,7 @@ RUN ${CC} ${CFLAGS} -I/usr/local/include -I. -c simd-loops/helpers.c -o helpers.
 # NEON variant - NEON optimizations enabled
 FROM builder-base AS builder-neon
 
-ARG BUILD_MARCH
 ENV FEAT_DEFS="-D__ARM_NEON -U__ARM_FEATURE_SVE -U__ARM_FEATURE_SVE2 -U__ARM_FEATURE_SVE2p1 -U__ARM_FEATURE_SME -U__ARM_FEATURE_SME2 -U__ARM_FEATURE_SME2p1"
-
 ENV COMMON_DEFS="-DMAX_GLOBAL_MEMORY_KIB=16384 -DPROBLEM_SIZE_LIMIT_KIB=64 -DMAX_VL=512 -MMD -Wall -Werror -O2 -fno-tree-vectorize"
 ENV CFLAGS="-march=${BUILD_MARCH} ${COMMON_DEFS} ${FEAT_DEFS}"
 ENV CXXFLAGS="${CFLAGS} -std=c++17"
@@ -71,9 +71,7 @@ RUN ${CC} ${CFLAGS} -I/usr/local/include -I. -c simd-loops/helpers.c -o helpers.
 # SVE variant - SVE optimizations enabled
 FROM builder-base AS builder-sve
 
-ARG BUILD_MARCH
 ENV FEAT_DEFS="-D__ARM_FEATURE_SVE2 -U__ARM_FEATURE_SVE2p1 -U__ARM_FEATURE_SME -U__ARM_FEATURE_SME2 -U__ARM_FEATURE_SME2p1"
-
 ENV COMMON_DEFS="-DMAX_GLOBAL_MEMORY_KIB=16384 -DPROBLEM_SIZE_LIMIT_KIB=64 -DMAX_VL=512 -MMD -Wall -Werror -O2 -fno-tree-vectorize"
 ENV CFLAGS="-march=${BUILD_MARCH} ${COMMON_DEFS} ${FEAT_DEFS}"
 ENV CXXFLAGS="${CFLAGS} -std=c++17"
@@ -88,58 +86,14 @@ RUN ${CC} ${CFLAGS} -I/usr/local/include -I. -c simd-loops/helpers.c -o helpers.
     ${CXX} -o processor server.o helpers.o static_rand.o loop_222_wrapper.o \
     && ${STRIP} processor
 
-# Final scalar runtime
-FROM ubuntu:24.04 AS app-scalar
-
-ARG BUILD_MARCH
-
-ENV BUILD_VARIANT=scalar \
-    BUILD_MARCH=${BUILD_MARCH} \
-    BUILD_OPTIMIZATION=scalar-only \
-    SERVICE_PORT=8000
-
-WORKDIR /app
-
-COPY --from=builder-scalar /build/processor .
-
-EXPOSE 8000
-
-CMD ["./processor"]
-
-# Final NEON runtime
-FROM ubuntu:24.04 AS app-neon
-
-ARG BUILD_MARCH
-
-ENV BUILD_VARIANT=neon \
-    BUILD_MARCH=${BUILD_MARCH} \
-    BUILD_OPTIMIZATION=neon-vectorized \
-    SERVICE_PORT=8000
-
-WORKDIR /app
-
-COPY --from=builder-neon /build/processor .
-
-EXPOSE 8000
-
-CMD ["./processor"]
-
-# Final SVE runtime
-FROM ubuntu:24.04 AS app-sve
+# Final app stage
+FROM ${BUILDER_LAYER} AS app
 
 ARG ENABLE_SVE
-ARG BUILD_MARCH
 
-ENV BUILD_VARIANT=sve \
-    BUILD_MARCH=${BUILD_MARCH} \
-    BUILD_OPTIMIZATION=sve-vectorized \
-    ENABLE_SVE=${ENABLE_SVE} \
+ENV ENABLE_SVE=${ENABLE_SVE} \
     SERVICE_PORT=8000
-
-WORKDIR /app
-
-COPY --from=builder-sve /build/processor .
 
 EXPOSE 8000
 
-CMD ["./processor"]
+CMD ["/build/processor"]
