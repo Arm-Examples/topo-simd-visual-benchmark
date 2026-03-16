@@ -19,7 +19,7 @@ To use this template download and install `topo` from [arm/topo](https://github.
 ### Clone the project:
 
 ```bash
-topo clone https://github.com/Arm-Examples/topo-simd-visual-benchmark.git
+topo clone git@github.com:Arm-Examples/topo-simd-visual-benchmark.git
 ```
 
 You will be prompted to provide values for the template parameters.
