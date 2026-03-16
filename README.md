@@ -19,7 +19,7 @@ To use this template download and install `topo` from [arm/topo](https://github.
 ### Clone the project:
 
 ```bash
-topo clone ./target-directory template:simd-visual-benchmark
+topo clone git@github.com:Arm-Examples/topo-simd-visual-benchmark.git
 ```
 
 You will be prompted to provide values for the template parameters.
@@ -27,7 +27,7 @@ You will be prompted to provide values for the template parameters.
 ### Build and Deploy the project:
 
 ```bash
-cd target-directory
+cd topo-simd-visual-benchmark
 topo deploy --target <ip-address-of-target>
 ```
 
