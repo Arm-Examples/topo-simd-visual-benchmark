@@ -48,7 +48,7 @@ services:
       - "8095:8080"
 
 x-topo:
-  name: "simd-visual-benchmark"
+  name: "SIMD Visual Benchmark"
   description: |
     Visual demonstration of SIMD performance benefits on Arm processors.
     Compare scalar (no SIMD), NEON (128-bit), and SVE (scalable vector)
