@@ -5,7 +5,6 @@
 #include <vector>
 #include <cstdint>
 #include <algorithm>
-#include <cctype>
 #include <iostream>
 #include <cstdlib>
 #include <stdexcept>
@@ -253,22 +252,6 @@ int main() {
                       << "', defaulting to 8000" << std::endl;
             service_port = 8000;
         }
-    }
-
-    const char* enable_sve_env = std::getenv("ENABLE_SVE");
-    bool sve_enabled = true;
-    if (enable_sve_env) {
-        std::string flag(enable_sve_env);
-        std::transform(flag.begin(), flag.end(), flag.begin(),
-                       [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
-        if (flag != "yes") {
-            sve_enabled = false;
-        }
-    }
-
-    if (march.find("sve") != std::string::npos && !sve_enabled) {
-        std::cout << "ENABLE_SVE disabled for " << march << "; exiting service." << std::endl;
-        return 0;
     }
 
     // Build info endpoint

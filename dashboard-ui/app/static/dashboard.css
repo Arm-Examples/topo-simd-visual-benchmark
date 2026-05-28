@@ -119,13 +119,6 @@ select {
     justify-items: stretch;
 }
 
-.results-grid.no-sve {
-    max-width: 980px;
-    margin-left: auto;
-    margin-right: auto;
-    grid-template-columns: repeat(2, 1fr);
-}
-
 .result-column {
     background: var(--bg-medium);
     border-radius: 8px;
@@ -304,8 +297,7 @@ canvas {
         justify-content: center;
     }
 
-    .results-grid,
-    .results-grid.no-sve {
+    .results-grid {
         grid-template-columns: minmax(0, 1fr);
         max-width: none;
     }
