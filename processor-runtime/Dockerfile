@@ -89,10 +89,8 @@ RUN ${CC} ${CFLAGS} -I/usr/local/include -I. -c simd-loops/helpers.c -o helpers.
 # Final app stage
 FROM ${BUILDER_LAYER} AS app
 
-ARG ENABLE_SVE
 
-ENV ENABLE_SVE=${ENABLE_SVE} \
-    SERVICE_PORT=8000
+ENV SERVICE_PORT=8000
 
 EXPOSE 8000
 

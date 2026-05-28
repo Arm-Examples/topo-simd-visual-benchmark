@@ -18,12 +18,11 @@ NEON_URL = os.getenv("NEON_API_BASE_URL", "http://processor-neon:8000")
 SVE_URL = os.getenv("SVE_API_BASE_URL", "http://processor-sve:8000")
 
 TIMEOUT = float(os.getenv("PROCESSOR_CLIENT_TIMEOUT_S", "30"))
-SVE_ENABLED = os.getenv("ENABLE_SVE", "yes").lower() not in {"0", "false", "no"}
 
 BACKENDS = [
     ("scalar", SCALAR_URL),
     ("neon", NEON_URL),
-    *([("sve", SVE_URL)] if SVE_ENABLED else []),
+    ("sve", SVE_URL),
 ]
 BACKEND_NAMES = [name for name, _ in BACKENDS]
 
@@ -33,7 +32,6 @@ async def dashboard(request: Request):
     """Render the main dashboard page"""
     context = {
         "request": request,
-        "sve_enabled": SVE_ENABLED,
         "backends": BACKEND_NAMES,
     }
     return templates.TemplateResponse("dashboard.html", context)
