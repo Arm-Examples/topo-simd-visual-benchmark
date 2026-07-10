@@ -1,16 +1,15 @@
-# Multi-stage Dockerfile for building scalar, NEON, and SVE variants
-ARG BUILDER_LAYER=ubuntu:24.04
+ARG BUILDER_LAYER=builder-scalar
 
 # Base builder stage with common dependencies
-FROM ubuntu:24.04 AS builder-base
+FROM public.ecr.aws/docker/library/alpine:3.22.5 AS builder-base
 
 ARG BUILD_MARCH
 ENV BUILD_MARCH=${BUILD_MARCH}
 
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    git \
-    clang-20
+RUN apk add --no-cache \
+    build-base \
+    clang20 \
+    git
 
 WORKDIR /build
 
@@ -30,7 +29,7 @@ RUN git clone --depth 1 --branch v3.11.2 https://github.com/nlohmann/json.git &&
 COPY simd-loops/ ./simd-loops/
 
 # Copy source files
-COPY server.cpp loop_222_wrapper.c ./ 
+COPY server.cpp loop_222_wrapper.c ./
 
 # Scalar variant - no SIMD optimizations
 FROM builder-base AS builder-scalar
@@ -47,7 +46,7 @@ RUN ${CC} ${CFLAGS} -I/usr/local/include -I. -c simd-loops/helpers.c -o helpers.
     ${CC} ${CFLAGS} -I/usr/local/include -I. -c simd-loops/static_rand.c -o static_rand.o && \
     ${CC} ${CFLAGS} -I/usr/local/include -I. -c loop_222_wrapper.c -o loop_222_wrapper.o && \
     ${CXX} ${CXXFLAGS} -I/usr/local/include -I. -c server.cpp -o server.o && \
-    ${CXX} -o processor server.o helpers.o static_rand.o loop_222_wrapper.o \
+    ${CXX} -static-libstdc++ -static-libgcc -o processor server.o helpers.o static_rand.o loop_222_wrapper.o \
     && ${STRIP} processor
 
 # NEON variant - NEON optimizations enabled
@@ -65,7 +64,7 @@ RUN ${CC} ${CFLAGS} -I/usr/local/include -I. -c simd-loops/helpers.c -o helpers.
     ${CC} ${CFLAGS} -I/usr/local/include -I. -c simd-loops/static_rand.c -o static_rand.o && \
     ${CC} ${CFLAGS} -I/usr/local/include -I. -c loop_222_wrapper.c -o loop_222_wrapper.o && \
     ${CXX} ${CXXFLAGS} -I/usr/local/include -I. -c server.cpp -o server.o && \
-    ${CXX} -o processor server.o helpers.o static_rand.o loop_222_wrapper.o \
+    ${CXX} -static-libstdc++ -static-libgcc -o processor server.o helpers.o static_rand.o loop_222_wrapper.o \
     && ${STRIP} processor
 
 # SVE variant - SVE optimizations enabled
@@ -83,15 +82,21 @@ RUN ${CC} ${CFLAGS} -I/usr/local/include -I. -c simd-loops/helpers.c -o helpers.
     ${CC} ${CFLAGS} -I/usr/local/include -I. -c simd-loops/static_rand.c -o static_rand.o && \
     ${CC} ${CFLAGS} -I/usr/local/include -I. -c loop_222_wrapper.c -o loop_222_wrapper.o && \
     ${CXX} ${CXXFLAGS} -I/usr/local/include -I. -c server.cpp -o server.o && \
-    ${CXX} -o processor server.o helpers.o static_rand.o loop_222_wrapper.o \
+    ${CXX} -static-libstdc++ -static-libgcc -o processor server.o helpers.o static_rand.o loop_222_wrapper.o \
     && ${STRIP} processor
 
 # Final app stage
-FROM ${BUILDER_LAYER} AS app
+FROM ${BUILDER_LAYER} AS selected-builder
 
+FROM dhi.io/alpine-base:3.24 AS app
+
+ARG BUILD_MARCH
+ENV BUILD_MARCH=${BUILD_MARCH}
+
+COPY --from=selected-builder /build/processor /usr/local/bin/processor
 
 ENV SERVICE_PORT=8000
 
 EXPOSE 8000
 
-CMD ["/build/processor"]
+CMD ["/usr/local/bin/processor"]
