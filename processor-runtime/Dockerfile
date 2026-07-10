@@ -1,7 +1,7 @@
 ARG BUILDER_LAYER=builder-scalar
 
 # Base builder stage with common dependencies
-FROM dhi.io/alpine-base:3.24-dev AS builder-base
+FROM public.ecr.aws/docker/library/alpine:3.22.5 AS builder-base
 
 ARG BUILD_MARCH
 ENV BUILD_MARCH=${BUILD_MARCH}
