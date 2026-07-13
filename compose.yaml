@@ -63,9 +63,10 @@ x-topo:
   features:
     - "SVE"
 
-  args:
+  args: &args
     PROCESSOR_CLIENT_TIMEOUT_S:
       description: |
         HTTP timeout in seconds that the dashboard uses when contacting the
         processor services. Increase when running very large workloads.
       default: "30"
+  parameters: *args
