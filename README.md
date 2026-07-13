@@ -1,6 +1,6 @@
 # SIMD Visual Benchmark
 
-> This project is a [Topo](https://github.com/arm/topo) template and follows the [Topo Template Format Specification](https://github.com/arm/Topo-Template-Format).
+> This is a [Topo](https://github.com/arm/topo) Project and follows the [Topo Project Specification](https://github.com/arm/topo/tree/main/docs/project-specification).
 
 Visual demonstration of SIMD performance benefits on Arm processors. Compare scalar (no SIMD), NEON (128-bit), and SVE (scalable vector) implementations running identical image processing workloads side-by-side.
 
@@ -10,11 +10,11 @@ It demonstrates:
 - Running and profiling hardware acceleration features with a simple image box blur algorithm
 - An interactive web dashboard to run and view the benchmark results
 
-To find out more about the Topo template format, see [arm/topo-template-format](https://github.com/arm/topo-template-format)
+To find out more about the project format, see the [Topo Project Specification](https://github.com/arm/topo/tree/main/docs/project-specification).
 
 ## Usage
 
-To use this template download and install `topo` from [arm/topo](https://github.com/arm/topo)
+To use this project download and install `topo` from [arm/topo](https://github.com/arm/topo)
 
 ### Clone the project:
 
@@ -22,7 +22,7 @@ To use this template download and install `topo` from [arm/topo](https://github.
 topo clone git@github.com:Arm-Examples/topo-simd-visual-benchmark.git
 ```
 
-You will be prompted to provide values for the template parameters.
+The clone step will prompt you for values for the project parameters.
 
 ### Build and Deploy the project:
 
@@ -39,4 +39,4 @@ Once deployment completes, open a browser to `http://<ip-address-of-target>:8095
 
 # Acknowledgments
 
-This template makes use of Arm's [simd-loops](https://gitlab.arm.com/architecture/simd-loops) project to perform the hardware-accelerated convolution.
+This project makes use of Arm's [simd-loops](https://gitlab.arm.com/architecture/simd-loops) project to perform the hardware-accelerated convolution.
