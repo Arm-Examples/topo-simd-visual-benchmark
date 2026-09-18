@@ -37,7 +37,7 @@ services:
     build:
       context: ./dashboard-ui
       args:
-        PROCESSOR_CLIENT_TIMEOUT_S: 30
+        PROCESSOR_CLIENT_TIMEOUT_S: ${PROCESSOR_CLIENT_TIMEOUT_S:-30}
     depends_on:
       - processor-scalar
       - processor-neon
