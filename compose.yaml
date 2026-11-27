@@ -63,6 +63,8 @@ x-topo:
   features:
     - "SVE"
 
+  deployment_success_message: |
+    The SIMD Visual Benchmark has been successfully deployed. You can access the dashboard at http://${TOPO_TARGET_HOSTNAME?:<ip address of target>}:8095.
   args: &args
     PROCESSOR_CLIENT_TIMEOUT_S:
       description: |
