@@ -22,8 +22,6 @@ To use this project download and install `topo` from [arm/topo](https://github.c
 topo clone git@github.com:Arm-Examples/topo-simd-visual-benchmark.git
 ```
 
-The clone step will prompt you for values for the project parameters.
-
 ### Build and Deploy the project:
 
 ```bash

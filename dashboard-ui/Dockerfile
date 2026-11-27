@@ -2,10 +2,6 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-ARG PROCESSOR_CLIENT_TIMEOUT_S
-
-ENV PROCESSOR_CLIENT_TIMEOUT_S=${PROCESSOR_CLIENT_TIMEOUT_S}
-
 # Install dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
