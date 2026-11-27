@@ -42,7 +42,7 @@ RUN ${CC} ${CFLAGS} -I/usr/local/include -I. -c simd-loops/helpers.c -o helpers.
     ${CXX} -static-libstdc++ -static-libgcc -o processor server.o helpers.o static_rand.o loop_222_wrapper.o \
     && ${STRIP} processor
 
-FROM dhi.io/alpine-base:3.24 AS app
+FROM public.ecr.aws/docker/library/alpine:3.24 AS app
 
 ARG BUILD_MARCH
 ENV BUILD_MARCH=${BUILD_MARCH}
