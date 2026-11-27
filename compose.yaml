@@ -6,7 +6,7 @@ services:
       target: app
       args:
         BUILD_MARCH: "armv8.4-a+fp16+bf16"
-        BUILDER_LAYER: builder-scalar
+        FEAT_DEFS: "-DHAVE_NATIVE -U__ARM_NEON -U__ARM_FEATURE_SVE -U__ARM_FEATURE_SVE2 -U__ARM_FEATURE_SVE2p1 -U__ARM_FEATURE_SME -U__ARM_FEATURE_SME2 -U__ARM_FEATURE_SME2p1"
     ports:
       - "8090:8000"
 
@@ -17,7 +17,7 @@ services:
       target: app
       args:
         BUILD_MARCH: "armv8.4-a+fp16+bf16+simd+fp16fml+dotprod"
-        BUILDER_LAYER: builder-neon
+        FEAT_DEFS: "-D__ARM_NEON -U__ARM_FEATURE_SVE -U__ARM_FEATURE_SVE2 -U__ARM_FEATURE_SVE2p1 -U__ARM_FEATURE_SME -U__ARM_FEATURE_SME2 -U__ARM_FEATURE_SME2p1"
     ports:
       - "8091:8000"
 
@@ -28,7 +28,7 @@ services:
       target: app
       args:
         BUILD_MARCH: "armv8.4-a+fp16+bf16+simd+fp16fml+dotprod+sve+sve2"
-        BUILDER_LAYER: builder-sve
+        FEAT_DEFS: "-D__ARM_FEATURE_SVE2 -U__ARM_FEATURE_SVE2p1 -U__ARM_FEATURE_SME -U__ARM_FEATURE_SME2 -U__ARM_FEATURE_SME2p1"
     ports:
       - "8092:8000"
 

@@ -1,10 +1,4 @@
-ARG BUILDER_LAYER=builder-scalar
-
-# Base builder stage with common dependencies
-FROM public.ecr.aws/docker/library/alpine:3.22.5 AS builder-base
-
-ARG BUILD_MARCH
-ENV BUILD_MARCH=${BUILD_MARCH}
+FROM public.ecr.aws/docker/library/alpine:3.22.5 AS builder
 
 RUN apk add --no-cache \
     build-base \
@@ -31,10 +25,9 @@ COPY simd-loops/ ./simd-loops/
 # Copy source files
 COPY server.cpp loop_222_wrapper.c ./
 
-# Scalar variant - no SIMD optimizations
-FROM builder-base AS builder-scalar
+ARG BUILD_MARCH
+ARG FEAT_DEFS
 
-ENV FEAT_DEFS="-DHAVE_NATIVE -U__ARM_NEON -U__ARM_FEATURE_SVE -U__ARM_FEATURE_SVE2 -U__ARM_FEATURE_SVE2p1 -U__ARM_FEATURE_SME -U__ARM_FEATURE_SME2 -U__ARM_FEATURE_SME2p1"
 ENV COMMON_DEFS="-DMAX_GLOBAL_MEMORY_KIB=16384 -DPROBLEM_SIZE_LIMIT_KIB=64 -DMAX_VL=512 -MMD -Wall -Werror -O2 -fno-tree-vectorize"
 ENV CFLAGS="-march=${BUILD_MARCH} ${COMMON_DEFS} ${FEAT_DEFS}"
 ENV CXXFLAGS="${CFLAGS} -std=c++17"
@@ -48,52 +41,13 @@ RUN ${CC} ${CFLAGS} -I/usr/local/include -I. -c simd-loops/helpers.c -o helpers.
     ${CXX} ${CXXFLAGS} -I/usr/local/include -I. -c server.cpp -o server.o && \
     ${CXX} -static-libstdc++ -static-libgcc -o processor server.o helpers.o static_rand.o loop_222_wrapper.o \
     && ${STRIP} processor
-
-# NEON variant - NEON optimizations enabled
-FROM builder-base AS builder-neon
-
-ENV FEAT_DEFS="-D__ARM_NEON -U__ARM_FEATURE_SVE -U__ARM_FEATURE_SVE2 -U__ARM_FEATURE_SVE2p1 -U__ARM_FEATURE_SME -U__ARM_FEATURE_SME2 -U__ARM_FEATURE_SME2p1"
-ENV COMMON_DEFS="-DMAX_GLOBAL_MEMORY_KIB=16384 -DPROBLEM_SIZE_LIMIT_KIB=64 -DMAX_VL=512 -MMD -Wall -Werror -O2 -fno-tree-vectorize"
-ENV CFLAGS="-march=${BUILD_MARCH} ${COMMON_DEFS} ${FEAT_DEFS}"
-ENV CXXFLAGS="${CFLAGS} -std=c++17"
-ENV CC=clang-20 \
-    CXX=clang++-20 \
-    STRIP=strip
-
-RUN ${CC} ${CFLAGS} -I/usr/local/include -I. -c simd-loops/helpers.c -o helpers.o && \
-    ${CC} ${CFLAGS} -I/usr/local/include -I. -c simd-loops/static_rand.c -o static_rand.o && \
-    ${CC} ${CFLAGS} -I/usr/local/include -I. -c loop_222_wrapper.c -o loop_222_wrapper.o && \
-    ${CXX} ${CXXFLAGS} -I/usr/local/include -I. -c server.cpp -o server.o && \
-    ${CXX} -static-libstdc++ -static-libgcc -o processor server.o helpers.o static_rand.o loop_222_wrapper.o \
-    && ${STRIP} processor
-
-# SVE variant - SVE optimizations enabled
-FROM builder-base AS builder-sve
-
-ENV FEAT_DEFS="-D__ARM_FEATURE_SVE2 -U__ARM_FEATURE_SVE2p1 -U__ARM_FEATURE_SME -U__ARM_FEATURE_SME2 -U__ARM_FEATURE_SME2p1"
-ENV COMMON_DEFS="-DMAX_GLOBAL_MEMORY_KIB=16384 -DPROBLEM_SIZE_LIMIT_KIB=64 -DMAX_VL=512 -MMD -Wall -Werror -O2 -fno-tree-vectorize"
-ENV CFLAGS="-march=${BUILD_MARCH} ${COMMON_DEFS} ${FEAT_DEFS}"
-ENV CXXFLAGS="${CFLAGS} -std=c++17"
-ENV CC=clang-20 \
-    CXX=clang++-20 \
-    STRIP=strip
-
-RUN ${CC} ${CFLAGS} -I/usr/local/include -I. -c simd-loops/helpers.c -o helpers.o && \
-    ${CC} ${CFLAGS} -I/usr/local/include -I. -c simd-loops/static_rand.c -o static_rand.o && \
-    ${CC} ${CFLAGS} -I/usr/local/include -I. -c loop_222_wrapper.c -o loop_222_wrapper.o && \
-    ${CXX} ${CXXFLAGS} -I/usr/local/include -I. -c server.cpp -o server.o && \
-    ${CXX} -static-libstdc++ -static-libgcc -o processor server.o helpers.o static_rand.o loop_222_wrapper.o \
-    && ${STRIP} processor
-
-# Final app stage
-FROM ${BUILDER_LAYER} AS selected-builder
 
 FROM dhi.io/alpine-base:3.24 AS app
 
 ARG BUILD_MARCH
 ENV BUILD_MARCH=${BUILD_MARCH}
 
-COPY --from=selected-builder /build/processor /usr/local/bin/processor
+COPY --from=builder /build/processor /usr/local/bin/processor
 
 ENV SERVICE_PORT=8000
 
