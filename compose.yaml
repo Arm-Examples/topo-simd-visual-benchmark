@@ -36,8 +36,6 @@ services:
     platform: linux/arm64
     build:
       context: ./dashboard-ui
-      args:
-        PROCESSOR_CLIENT_TIMEOUT_S: ${PROCESSOR_CLIENT_TIMEOUT_S:-30}
     depends_on:
       - processor-scalar
       - processor-neon
@@ -65,10 +63,3 @@ x-topo:
 
   deployment_success_message: |
     The SIMD Visual Benchmark has been successfully deployed. You can access the dashboard at http://${TOPO_TARGET_HOSTNAME?:<ip address of target>}:8095.
-  args: &args
-    PROCESSOR_CLIENT_TIMEOUT_S:
-      description: |
-        HTTP timeout in seconds that the dashboard uses when contacting the
-        processor services. Increase when running very large workloads.
-      default: "30"
-  parameters: *args
